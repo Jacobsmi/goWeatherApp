@@ -2,46 +2,59 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
 	config "./config"
 )
 
 func getUserInput() string {
-	location := ""
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Please enter the city you live in:")
+	fmt.Println("Please enter the zip code:")
 	scanner.Scan()
-	city := scanner.Text()
-	if city == "" {
-		fmt.Println("Please enter a valid name")
-		location = getUserInput()
-		return location
+	zip := scanner.Text()
+	if len(zip) != 5 {
+		fmt.Println("Please enter a valid zip code")
+		zip = getUserInput()
 	}
-	fmt.Println("Please enter the State Code (EX: MA, NY, CA):")
-	scanner.Scan()
-	state := scanner.Text()
-	if state == "" || len(state) != 2 {
-		fmt.Println("Please enter a valid name")
-		location = getUserInput()
-		return location
+	return zip
+}
+
+func getAPI(apiString string) Weather {
+	var newWeather Weather
+	response, err := http.Get(apiString)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		jsonErr := json.NewDecoder(response.Body).Decode(&newWeather)
+		if jsonErr != nil {
+			fmt.Println(jsonErr)
+		}
 	}
-	fmt.Println("Please enter the 2 letter Country Code (EX: US, UK):")
-	scanner.Scan()
-	country := scanner.Text()
-	if country == "" || len(country) != 2 {
-		fmt.Println("Please enter a valid name")
-		location = getUserInput()
-		return location
-	}
-	location = city + "," + state + "," + country
-	return location
+	return newWeather
+}
+
+func outputWeather(weatherForLoc Weather) {
+	fmt.Println("Here is the weather for", weatherForLoc.Name)
+	fmt.Println("The temperature is", weatherForLoc.Main.Temp)
+}
+
+// Weather => this is a main struct for the weather
+type Weather struct {
+	Name string      `json:"name"`
+	Main WeatherInfo `json:"main"`
+}
+
+// WeatherInfo => Looks at the main object with json being passed into it
+type WeatherInfo struct {
+	Temp float64 `json:"temp"`
 }
 
 func main() {
-	fmt.Println("The api key is", config.GetAPIKey())
 	location := getUserInput()
-	apiString := fmt.Sprintf("api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=imperial", location, config.GetAPIKey())
-	fmt.Println("The city entered was", location, "and the api string is", apiString)
+	apiString := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?zip=%s&appid=%s&units=imperial", location, config.GetAPIKey())
+	weatherForLoc := getAPI(apiString)
+	outputWeather(weatherForLoc)
 }
