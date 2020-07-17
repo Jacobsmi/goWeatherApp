@@ -10,11 +10,14 @@ import (
 	config "./config"
 )
 
+// Gets the Zip Code from user input and returns the zip code
 func getUserInput() string {
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(os.Stdin) // Create a scanner object using the Input from the OS
 	fmt.Println("Please enter the zip code:")
-	scanner.Scan()
-	zip := scanner.Text()
+	scanner.Scan()        // Get user input
+	zip := scanner.Text() // Get the text from the input
+	// Short validation for the zip to make sure it is 5 characters
+	// FEATURE ADDITION? Make sure it is an int too
 	if len(zip) != 5 {
 		fmt.Println("Please enter a valid zip code")
 		zip = getUserInput()
@@ -22,12 +25,17 @@ func getUserInput() string {
 	return zip
 }
 
+// Calls to the API and stores response information in a struct object return the struct variable
 func getAPI(apiString string) Weather {
+	// Create a var of the struct to hold information
 	var newWeather Weather
+	// Use http.Get to call the API
 	response, err := http.Get(apiString)
+	// Make sure there is no error
 	if err != nil {
 		fmt.Println(err)
 	} else {
+		// Decode the JSON and save it in the variable we created
 		jsonErr := json.NewDecoder(response.Body).Decode(&newWeather)
 		if jsonErr != nil {
 			fmt.Println(jsonErr)
@@ -36,6 +44,7 @@ func getAPI(apiString string) Weather {
 	return newWeather
 }
 
+// Basic output for the information just to make sure everything is working
 func outputWeather(weatherForLoc Weather) {
 	fmt.Println("Here is the weather for", weatherForLoc.Name)
 	fmt.Println("The temperature is", weatherForLoc.Main.Temp)
@@ -53,8 +62,12 @@ type WeatherInfo struct {
 }
 
 func main() {
+	// Set location
 	location := getUserInput()
+	// Format the string for the API call with my private key and the zip code provided by the user
 	apiString := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?zip=%s&appid=%s&units=imperial", location, config.GetAPIKey())
+	// Get the weather from the API
 	weatherForLoc := getAPI(apiString)
+	// Print the weather
 	outputWeather(weatherForLoc)
 }
